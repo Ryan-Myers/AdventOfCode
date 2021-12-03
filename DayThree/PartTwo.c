@@ -2,67 +2,92 @@
 #include <string.h>
 #include <stdlib.h>
 
-/*
-**  Bit set, clear, and test operations
-**
-**  public domain snippet by Bob Stout
-*/
-
-typedef enum {ERROR = -1, FALSE, TRUE} LOGICAL;
-
-#define BOOL(x) (!(!(x)))
-
-#define BitSet(arg,posn) ((arg) | (1L << (posn)))
-#define BitClr(arg,posn) ((arg) & ~(1L << (posn)))
-#define BitTst(arg,posn) BOOL((arg) & (1L << (posn)))
-#define BitFlp(arg,posn) ((arg) ^ (1L << (posn)))
-
-
-#define BITSPERLINE 12
+#define BITSPERLINE 5
 
 int main(void) {
     FILE* fp;
-    fp = fopen("input.txt", "r");
+    fp = fopen("inputTest.txt", "r");
     if (fp == NULL) {
       perror("Failed: ");
       return 1;
     }
 
 	char bits[BITSPERLINE];
-	int bitCounterPositive[BITSPERLINE];	
-	int bitCounterNegative[BITSPERLINE];
+	int bitCounterOne[BITSPERLINE];	
+	int bitCounterZero[BITSPERLINE];
+	int linesInFile = 0;
 
 	//Default array values to zero, but allow the array to grow with BITSPERLINE being redefined.
-	memset(bitCounterPositive, 0, sizeof bitCounterPositive);
-	memset(bitCounterNegative, 0, sizeof bitCounterNegative);
+	memset(bitCounterOne, 0, sizeof bitCounterOne);
+	memset(bitCounterZero, 0, sizeof bitCounterZero);
 
 	while(fscanf(fp, "%s", bits) != EOF) {
-		//printf("Bits: %s\n", bits);
 		for (int i = 0; i < BITSPERLINE; i++) {
-			//printf("Bit: %c\n", bits[i]);
 			if (bits[i] == '0') {
-				bitCounterNegative[i]++;
+				bitCounterZero[i]++;
 			}
 			else {
-				bitCounterPositive[i]++;
+				bitCounterOne[i]++;
 			}
-			//printf("bitCounterNegative[%i]: %i\n", i, bitCounterNegative[i]);
-			//printf("bitCounterPositive[%i]: %i\n", i, bitCounterPositive[i]);
 		}
+		linesInFile++;
 	}
+
+	//Reset the file pointer to the start of the file so we can read it again
+	rewind(fp);
 
 	int gammaRate = 0;
 	int epsilonRate = 0;
+	int oxygenRateBitsToCheck = 0;
 
 	for (int i = 0 ; i < BITSPERLINE; i++) {
-		if (bitCounterPositive[i] > bitCounterNegative[i]) {
+		if (bitCounterOne[i] >= bitCounterZero[i]) {
 			//We're setting the bits most significant first 
 			gammaRate |= 1UL << BITSPERLINE - 1 - i;
+			oxygenRateBitsToCheck |= 1UL << BITSPERLINE - 1 - i;
 		}
 		else {
 			epsilonRate |= 1UL << BITSPERLINE - 1 - i;
 		}
+		printf("Same: %i - %i - %i\n", i, bitCounterOne[i], bitCounterZero[i]);
+
+		if (bitCounterOne[i] == bitCounterZero[i]) {
+			printf("Same: %i\n", i);
+		 	oxygenRateBitsToCheck &= 0UL << BITSPERLINE - 1 - i;
+		}
 	}
+
+	//fileContents = ROWS:COLUMNS - LAST COLUMN will be an active flag
+	char fileContentsOxygen[linesInFile][BITSPERLINE + 2];
+	memset(fileContentsOxygen, 0, sizeof fileContentsOxygen);
+
+	int oxygenRowsLeft = linesInFile;
+
+	for (int row = 0; row < linesInFile; row++) {
+		fscanf(fp, "%s", fileContentsOxygen[row]);
+		//default each row as active
+		fileContentsOxygen[row][BITSPERLINE] = 'A';
+	}
+
+	for (int column = 0; column < BITSPERLINE; column++) {
+		for (int row = 0; row < linesInFile; row++) {
+			if (oxygenRowsLeft > 1 && fileContentsOxygen[row][BITSPERLINE] == 'A') {
+				if (((oxygenRateBitsToCheck & (1UL << BITSPERLINE - 1 - column)) && fileContentsOxygen[row][column] != '1') ||
+			       (!(oxygenRateBitsToCheck & (1UL << BITSPERLINE - 1 - column)) && fileContentsOxygen[row][column] != '0')) {
+
+					printf("Inactivating Row %i for column %i: %s\n", row, column, fileContentsOxygen[row]);
+					fileContentsOxygen[row][BITSPERLINE] = 'I';
+					oxygenRowsLeft--;
+				}
+			}
+		}
+	}
+
+	for (int i; i < linesInFile; i++) {
+		printf("Row %i: %s\n", i, fileContentsOxygen[i]);
+	}
+
+	printf("oxygenRateBitsToCheck: %i\n", oxygenRateBitsToCheck);
 
 	printf("gammaRate: %i\nepsilonRate: %i\nPower Consumption: %i\n", gammaRate, epsilonRate, gammaRate * epsilonRate);
 

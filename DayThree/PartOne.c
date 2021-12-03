@@ -2,22 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-/*
-**  Bit set, clear, and test operations
-**
-**  public domain snippet by Bob Stout
-*/
-
-typedef enum {ERROR = -1, FALSE, TRUE} LOGICAL;
-
-#define BOOL(x) (!(!(x)))
-
-#define BitSet(arg,posn) ((arg) | (1L << (posn)))
-#define BitClr(arg,posn) ((arg) & ~(1L << (posn)))
-#define BitTst(arg,posn) BOOL((arg) & (1L << (posn)))
-#define BitFlp(arg,posn) ((arg) ^ (1L << (posn)))
-
-
 #define BITSPERLINE 12
 
 int main(void) {
@@ -29,20 +13,20 @@ int main(void) {
     }
 
 	char bits[BITSPERLINE];
-	int bitCounterPositive[BITSPERLINE];	
-	int bitCounterNegative[BITSPERLINE];
+	int bitCounterOne[BITSPERLINE];	
+	int bitCounterZero[BITSPERLINE];
 
 	//Default array values to zero, but allow the array to grow with BITSPERLINE being redefined.
-	memset(bitCounterPositive, 0, sizeof bitCounterPositive);
-	memset(bitCounterNegative, 0, sizeof bitCounterNegative);
+	memset(bitCounterOne, 0, sizeof bitCounterOne);
+	memset(bitCounterZero, 0, sizeof bitCounterZero);
 
 	while(fscanf(fp, "%s", bits) != EOF) {
 		for (int i = 0; i < BITSPERLINE; i++) {
 			if (bits[i] == '0') {
-				bitCounterNegative[i]++;
+				bitCounterZero[i]++;
 			}
 			else {
-				bitCounterPositive[i]++;
+				bitCounterOne[i]++;
 			}
 		}
 	}
@@ -51,7 +35,7 @@ int main(void) {
 	int epsilonRate = 0;
 
 	for (int i = 0 ; i < BITSPERLINE; i++) {
-		if (bitCounterPositive[i] > bitCounterNegative[i]) {
+		if (bitCounterOne[i] > bitCounterZero[i]) {
 			//We're setting the bits most significant first 
 			gammaRate |= 1UL << BITSPERLINE - 1 - i;
 		}
